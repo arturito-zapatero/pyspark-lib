@@ -2,23 +2,26 @@
 """
 Created in 2018
 @author: aszewczyk
-Function that creates lists with dates denoting test/prediction sets start and end dates
-for each of the consecutive models (ie. model for next 7 days, days 8-14 and so forth)
+Function that creates lists with dates denoting test/prediction sets start and end dates for WFV (Walk-Forward
+Validation. The dates are created for each of the consecutive models (ie. model for next 7 days, days 8-14 and so forth)
 Input:
     @split_value - datetime object denoting date where the test set starts 
     (ie. tomorrow for model in production) 
 Returns:
     @start_days_list - list with dates denoting test set start for each for the consecutive models
     @end_days_list - list with dates denoting test set end for each for the consecutive models
-		@verbose - should print logger messages on the screen and save them to .log file?
-		@logger - logger connection
+    @verbose - should print logger messages on the screen and save them to .log file?
+    @logger - logger connection
+TODO: set the date ranges for WFV as input parameters (list)
 """
 from datetime import timedelta
 from datetime import datetime
 import calendar
-def create_test_dates_list(split_value,
-                          verbose,
-                          logger):
+
+
+def createTestDatesListWFV(split_value,
+                           verbose,
+                           logger):
     try:
         if verbose:
             logger.info('Create lists with test/prediction sets start and end dates start, function create_test_dates_list()')

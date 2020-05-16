@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created in 2019
+Created in Jan 2019
 @author: aszewczyk
 Function that avaluates the errors on training data set
 Input:
@@ -18,7 +18,7 @@ Returns:
 """
 import pandas as pd
 from lib.add_error_cols import add_error_cols
-def calc_training_set_error(fitList,
+def calcTrainingSetError(fitList,
                             fitBasicList,
                             trainDataList,
                             trainDataBasicList,
@@ -30,7 +30,8 @@ def calc_training_set_error(fitList,
     try:
         if verbose:
             logger.info('calc_training_set_error step start')
-        #fit to training set for training error evaluation for first and last models (ie. naxt week and in 3 months), basic and full feature list  
+
+        # Fit to training set for training error evaluation for first and last models (ie. naxt week and in 3 months), basic and full feature list
         resultsTrainFirstModel = fitList[0]\
                                     .transform(trainDataList[0])\
                                     .select(cols_id + [col_predict] + [col_target])
@@ -43,7 +44,8 @@ def calc_training_set_error(fitList,
         resultsTrainLastBasicModel  = fitBasicList[5]\
                                     .transform(trainDataBasicList[5])\
                                     .select(cols_id + [col_predict] + [col_target])
-        #add error columns
+
+        # Add error columns
         resultsTrainFirstModel = add_error_cols(resultsTrainFirstModel,
                                                  col_target,
                                                  col_predict,
@@ -64,7 +66,8 @@ def calc_training_set_error(fitList,
                                                      col_predict,
                                                      verbose,
                                                      logger)
-        #convert to Pandas
+
+        # Convert to Pandas
         resultsTrainFirstModelPnd = resultsTrainFirstModel.toPandas()
         resultsTrainLastModelPnd = resultsTrainLastModel.toPandas()
         resultsTrainFirstBasicModelPnd = resultsTrainFirstBasicModel.toPandas()
@@ -83,10 +86,7 @@ def calc_training_set_error(fitList,
         TrainCountFirstBasicModel = resultsTrainFirstBasicModelPnd.count()[0]
         TrainCountLastBasicModel = resultsTrainLastBasicModelPnd.count()[0]
 
-        if verbose:    
-            #TrainMAE = resultsTrainDataListFullPnd[col_target + '_AE'].mean()
-            #trainCount = resultsTrainDataListFullPnd.count()
-            #trainBasicCount = resultsTrainDataListFullPnd.count()
+        if verbose:
             logger.info('Training set MAPE for first full features model ' + col_target + ' is ' +
                               str(round(TrainMAPEFirstModel, 3)) + ' %')
             logger.info('Training set MAPE for last full features model ' + col_target + ' is ' +
@@ -107,6 +107,7 @@ def calc_training_set_error(fitList,
             logger.info('Number of rows/flights in last full features model: ' + str(TrainCountLastModel))
             logger.info('Number of rows/flights in first basic features model: ' + str(TrainCountFirstBasicModel))
             logger.info('Number of rows/flights in last basic features model: ' + str(TrainCountLastBasicModel))
+
         mlflow_params_extra = {'TrainMAPEFirstModel': TrainMAPEFirstModel,
             'TrainMAPELastModel': TrainMAPELastModel,
             'TrainMAPEFirstBasicModel': TrainMAPEFirstBasicModel,
@@ -125,4 +126,4 @@ def calc_training_set_error(fitList,
     except Exception:
         logger.exception("Fatal error in calc_training_set_error()")
         raise
-    return(mlflow_params_extra)
+    return mlflow_params_extra

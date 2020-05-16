@@ -28,13 +28,14 @@ Example:
                                                 logger=logger)
     Prepares data already partially processed in demand_forecast_data_prep() step, trains model using data until @first_pred_day-1 for @col_target,
     returns data prep and model pipelines, as well as saves them in S3. @data and @logger from demand_forecast_data_prep() step
+TODO: refactor!
 """
 
-from lib.add_error_cols import add_error_cols
-from lib.calc_training_set_error import calc_training_set_error
-from lib.create_spark_session import create_spark_session
-from lib.create_model_data_lists import create_training_data_lists
-from lib.define_features import define_features
+from lib.addErrorCols import addErrorCols
+from lib.calcTrainingSetError import calcTrainingSetError
+from lib.createSparkSession import createSparkSession
+from lib.createTrainingDataLists import createTrainingDataLists
+from lib.defineFeatures import defineFeatures
 import os
 from ConfigParser import SafeConfigParser
 from datetime import datetime
@@ -42,141 +43,140 @@ from pyspark.sql.functions import col
 from pyspark.ml import Pipeline, PipelineModel
 from pyspark.ml.feature import OneHotEncoderEstimator, OneHotEncoderModel, OneHotEncoder, StringIndexer, VectorAssembler
 from pyspark.ml.regression import RandomForestRegressor as RFRegr, RandomForestRegressionModel
-import pdb
-#from __init__ import get_data
-#MODEL_CONFIG_FILE=get_data("config/demand_forecast_config.conf")
+
+
 local_path=os.getcwd() + '/'
-MODEL_CONFIG_FILE=local_path+'data/config/demand_forecast_config.conf'
-def demand_forecast_training(data=False,
-                             col_target="revenue_tickets",
-                             first_pred_day=False,
-                             jarra='quinto',
-                             verbose=True,
-                             checks=False,
-                             logger=False):
+MODEL_CONFIG_FILE=local_path+'data/config/file_name.conf'
+
+
+def basicTrainingPipeline(data=False,
+                          col_target="revenue_tickets",
+                          first_pred_day=False,
+                          jarra='quinto',
+                          verbose=True,
+                          checks=False,
+                          logger=False):
     try:
         parser = SafeConfigParser()
         config_file_path = MODEL_CONFIG_FILE
         parser.read(config_file_path)
-        cols_id = [e.strip() for e in parser.get('col_names', 'cols_id').split(',')]
 
-        #model parameters (RF)
+        # Model parameters (RF)
         min_samples_leaf = int(parser.get('random_forest_params', 'min_samples_leaf'))
         max_features = parser.get('random_forest_params', 'max_features')
         max_features = max_features if max_features == 'sqrt' else str(max_features)
         num_trees = int(parser.get('random_forest_params', 'num_trees'))
         max_depth = int(parser.get('random_forest_params', 'max_depth'))
         subsampling_rate = float(parser.get('random_forest_params', 'subsampling_rate'))
-        #other parameters from parser
+
+        # Other parameters from parser
         training_sample = float(parser.get('random_forest_params', 'training_sample'))
         model_complexity = parser.get('model_params', 'model_complexity')
         use_clustered_data_sets = parser.getboolean('model_params', 'use_clustered_data_sets')
         cols_id = [e.strip() for e in parser.get('col_names', 'cols_id').split(',')]
         col_predict = col_target + '_pred'
-        #set 1st day of predictions
+
+        # Set 1st day of predictions
         if first_pred_day is not None:
             split_value = first_pred_day
         else:
             split_value = datetime.today()
             first_pred_day = split_value.strftime('%Y-%m-%d')
             split_value = split_value.strftime('%Y-%m-%d')
-        #save parameters
+
+        # Save parameters
         s3_save_path = parser.get('save_params', 's3_save_path')
         s3_save_pipelines_path = s3_save_path + 'pipelines/'+col_target+'/dt-execution=' + split_value + '/'
-        #connect to spark
-        spark = create_spark_session(jarra=jarra,
+
+        # Connect to spark
+        spark = createSparkSession(jarra=jarra,
                                      verbose=verbose,
                                      logger=logger)
-        #define features for each of the models (we have separate models for next 7 days, days 8-14, 15-32 and so on), also features for basic model (for flights w/o historical data)
-        features_list, features_list_basic_model, ohe_variables_in, cyclical_variables =\
-        define_features(model_complex=model_complexity,
-                        use_clustered_data_sets=use_clustered_data_sets,
-                        col_target=col_target,
-                        verbose=verbose,
-                        logger=logger)
-        ohe_variables_out = [s + '_catVec' for s in ohe_variables_in]
-        cyclical_variables_sin = [s + '_sin' for s in cyclical_variables]
-        cyclical_variables_cos = [s + '_cos' for s in cyclical_variables]
-        cyclical_variables_out = cyclical_variables_sin+cyclical_variables_cos
-        #add cyclical variables to features lists
-        for i in range(len(features_list)):
-            features_list[i] = features_list[i] + cyclical_variables_out
-            features_list_basic_model[i] = features_list_basic_model[i] + cyclical_variables_out
+
+        # Define name of the variable for predictions
+        cols_cyclical, cols_ohe_in, cols_features, col_target, cols_id = defineFeatures(model_complex='first',
+                                                                                        use_clustered_data_sets=False,
+                                                                                        col_target=col_target,
+                                                                                        verbose=False,
+                                                                                        logger=False)
+
+        # Add cyclical variables to features lists, OHE_out not as they are already in pipelines
+        cols_cyclical_sin = [s + '_sin' for s in cols_cyclical]
+        cols_cyclical_cos = [s + '_cos' for s in cols_cyclical]
+        cols_cyclical_out = cols_cyclical_sin + cols_cyclical_cos
+        for i in range(len(cols_features)):
+            cols_features[i] = cols_features[i] + cols_cyclical_out
+
+        # Fill with features (depending on how many models we have)
+        cols_ohe_out = []
+        features_list = []
+
+        col_date = ''
         if verbose:
-            logger.info(ohe_variables_in)
+            logger.info(cols_ohe_in)
             logger.info('Number of partition of data df: ' + str(data.rdd.getNumPartitions()))
-        #define date filters for training set and test/pred sets of each consecutive models
+
+        # Define date filters for training set and test/pred sets of each consecutive models
         filterTrainEndList = []
-        for i in range(len(features_list)):
-            filterTrainEndList.append(col('dt_flight_date_local') < split_value)
-        #create list with data sets for each of the consecutive models, each data set have different features
-        #split on date is done later in the script.
-        #also data list for rows/flights with Nulls (e.g. no historical data) is created separately
+        for i in range(len(cols_features)):
+            filterTrainEndList.append(col(col_date) < split_value)
+
+        # Create list with data sets for each of the consecutive models, each data set have different features
         data = data.coalesce(200)
-        train_data_list, train_data_basic_list = create_training_data_lists(data,
-                                                                             features_list,
-                                                                             features_list_basic_model,
-                                                                             ohe_variables_in,
-                                                                             col_target,
-                                                                             cols_id,
-                                                                             filterTrainEndList,
-                                                                             use_clustered_data_sets,
-                                                                             training_sample,
-                                                                             spark,
-                                                                             verbose,
-                                                                             logger)
-        #ad-hoc, there are some nans in hour (should not be in the new table ds_flights), remove in future
-        for i in range(len(train_data_list)):
-            train_data_list[i] = train_data_list[i].dropna(how='any', subset=['dt_flight_hour_local_zone_sin'])
-            train_data_basic_list[i] = train_data_basic_list[i].dropna(how='any', subset=['dt_flight_hour_local_zone_sin'])
-        #string indexer, one hot encoder and vector assembler (creates column 'features' with all the features for given model as vector),
-        #and create pipelines for each consecturive model (also 'basic' models)
+        train_data_list, train_data_basic_list = createTrainingDataLists(data,
+                                                                         cols_features,
+                                                                         cols_ohe_in,
+                                                                         col_target,
+                                                                         cols_id,
+                                                                         filterTrainEndList,
+                                                                         use_clustered_data_sets,
+                                                                         training_sample,
+                                                                         spark,
+                                                                         verbose,
+                                                                         logger)
+
+        # String indexer, one hot encoder and vector assembler (creates column 'features' with all the features for
+        # given model as vector),
         if verbose:
             logger.info('String indexer, one hot encoder and vector assembler, start')
-        #indexer: transforms string values into numeric values, the value that occurs in data most is indexed as zero, second as 1 etc.
+
+        # Indexer: transforms string values into numeric values, the value that occurs in data most is indexed as zero,
+        # second as 1 etc.
         indexers = [StringIndexer(inputCol=x,
                                   outputCol=x+'_tmp',
                                   handleInvalid='keep')
-                    for x in ohe_variables_in]
-        #one hot encoding
-        ohe_variables_in_tmp = [i + '_tmp' for i in ohe_variables_in]
+                    for x in cols_ohe_in]
+
+        # One hot encoding
+        cols_ohe_in_tmp = [i + '_tmp' for i in cols_ohe_in]
         encoder = OneHotEncoderEstimator(dropLast=True,
-                                         inputCols=ohe_variables_in_tmp,
-                                         outputCols=ohe_variables_out,
+                                         inputCols=cols_ohe_in_tmp,
+                                         outputCols=cols_ohe_out,
                                          handleInvalid ='keep')
-        #add to pipeline
+
+
+        # Add to pipeline
         pipeline_tmp=indexers + [encoder]
-        #create placeholders
+
+        # Create placeholders
         assembler = []
         pipeline_tmp2 = []
         pipeline_list = []
         pipelinePrepList = []
         trainDataList = []
-        assembler_basic = []
-        pipeline_basic_tmp2 = []
-        pipeline_basic_list = []
         pipelinePrepBasicList = []
         trainDataBasicList = []
         start = datetime.now()
         for i in range(len(train_data_list)):
             if verbose:
                 logger.info('Model ' + str(i))
-            features_list[i] = features_list[i] + ohe_variables_out
+            features_list[i] = features_list[i] + cols_ohe_out
             assembler.append(VectorAssembler(inputCols=features_list[i],
                                              outputCol='features'))
             pipeline_tmp2.append(pipeline_tmp + [assembler[i]])
             pipeline_list.append(Pipeline(stages=pipeline_tmp2[i]))
             pipelinePrepList.append(pipeline_list[i].fit(train_data_list[i]))
             trainDataList.append(pipelinePrepList[i].transform(train_data_list[i]))
-
-            #the same for basic model
-            features_list_basic_model[i] = features_list_basic_model[i] + ohe_variables_out
-            assembler_basic.append(VectorAssembler(inputCols=features_list_basic_model[i],
-                                                   outputCol='features'))
-            pipeline_basic_tmp2.append(pipeline_tmp + [assembler_basic[i]])
-            pipeline_basic_list.append(Pipeline(stages=pipeline_basic_tmp2[i]))
-            pipelinePrepBasicList.append(pipeline_basic_list[i].fit(train_data_basic_list[i]))
-            trainDataBasicList.append(pipelinePrepBasicList[i].transform(train_data_basic_list[i]))
 
         end = datetime.now()
 
@@ -191,38 +191,29 @@ def demand_forecast_training(data=False,
             logger.info('RF Model start')
 
         start_all = datetime.now()
-        #create placeholders
+
+        # Create placeholders
         RFModelList = []
         fitList = []
-        RFModelBasicList = []
         fitBasicList = []
         for i in range(len(trainDataList)):
             start = datetime.now()
             if verbose:
                 logger.info('Model '+str(i))
             RFModelList.append(RFRegr(labelCol=col_target,
-                           featuresCol='features',
-                           numTrees=num_trees,
-                           maxDepth=max_depth,
-                           featureSubsetStrategy=max_features,
-                           subsamplingRate=subsampling_rate,
-                           minInstancesPerNode=min_samples_leaf
-                           ))
-            RFModelBasicList.append(RFRegr(labelCol=col_target,
-                           featuresCol='features',
-                           numTrees=num_trees,
-                           maxDepth=max_depth,
-                           featureSubsetStrategy=max_features,
-                           subsamplingRate=subsampling_rate,
-                           minInstancesPerNode=min_samples_leaf
-                           ))
-            #repartition to get the evenly distributed data set:
+                                      featuresCol='features',
+                                      numTrees=num_trees,
+                                      maxDepth=max_depth,
+                                      featureSubsetStrategy=max_features,
+                                      subsamplingRate=subsampling_rate,
+                                      minInstancesPerNode=min_samples_leaf
+                                      ))
+
+            # Repartition to get the evenly distributed data set:
             trainDataList[i] = trainDataList[i].coalesce(36)
-            trainDataBasicList[i] = trainDataBasicList[i].coalesce(36)
-            #fit to training set
+
+            # Fit to training set
             fitList.append(RFModelList[i].setPredictionCol(col_predict).fit(trainDataList[i]))
-            #the same for 'basic' models
-            fitBasicList.append(RFModelBasicList[i].setPredictionCol(col_predict).fit(trainDataBasicList[i]))
             end = datetime.now()
             if verbose:
                 logger.info('Random Forest, ' + str(i) + ' model, time: ' + str(end-start))
@@ -230,19 +221,18 @@ def demand_forecast_training(data=False,
             logger.info('Saving data preparation and model pipelines in ' + s3_save_pipelines_path)
         for i in range(len(pipelinePrepList)):
             pipelinePrepList[i].write().overwrite().save(s3_save_pipelines_path+"data_prep_pipeline"+str(i))
-            pipelinePrepBasicList[i].write().overwrite().save(s3_save_pipelines_path+"data_prep_basic_pipeline"+str(i))
             fitList[i].write().overwrite().save(s3_save_pipelines_path+"model_pipeline"+str(i))
-            fitBasicList[i].write().overwrite().save(s3_save_pipelines_path+"model_basic_pipeline"+str(i))
+
         if checks:
-            mlflow_params_extra = calc_training_set_error(fitList,
-                                                          fitBasicList,
-                                                          trainDataList,
-                                                          trainDataBasicList,
-                                                          cols_id,
-                                                          col_predict,
-                                                          col_target,
-                                                          verbose,
-                                                          logger)
+            mlflow_params_extra = calcTrainingSetError(fitList,
+                                                       fitBasicList,
+                                                       trainDataList,
+                                                       trainDataBasicList,
+                                                       cols_id,
+                                                       col_predict,
+                                                       col_target,
+                                                       verbose,
+                                                       logger)
         else:
             mlflow_params_extra = {}
 
@@ -261,10 +251,8 @@ def demand_forecast_training(data=False,
                          'train_date_max': str(trainDataList[5].toPandas().dt_flight_date_local.max()),
                          'time_seconds': (end_all-start_all).total_seconds()
                          }
-        #spark.stop()
-        #if verbose:
-        #    logger.info('Spark Session stopped')
+
     except Exception:
         logger.exception("Fatal error in demand_forecast_training()")
         raise
-    return(pipelinePrepList, pipelinePrepBasicList, fitList, fitBasicList, mlflow_params, mlflow_params_extra)
+    return pipelinePrepList, fitList, mlflow_params, mlflow_params_extra

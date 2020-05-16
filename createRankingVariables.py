@@ -18,7 +18,9 @@ TODO:
 """
 from pyspark.sql.functions import col, udf, lit, sum
 from pyspark.sql.types import StringType
-def create_ranking_variables(data,
+
+
+def createRankingVariables(data,
                              ranking_cols,
                              ranking_by_col,
                              ranking_time_variable,
@@ -27,11 +29,14 @@ def create_ranking_variables(data,
                              logger):
     try:
         if verbose:
-            logger.info('Add ranking variables: ranking by: '+ranking_by_col+' ranking cols: '+str(ranking_cols)+' start, function create_ranking_variables()')
+            logger.info('Add ranking variables: ranking by: '+ranking_by_col+' ranking cols: '+str(ranking_cols)+
+                        ' start, function create_ranking_variables()')
         for i in range(len(ranking_cols)):
-            #create a temporary col
+
+            # Create a temporary col
             grouped_df = data.groupBy(ranking_by_col).sum(ranking_cols[i]).\
-                                                     withColumnRenamed('sum('+ranking_cols[i]+')', 'sum_'+ranking_cols[i]+'_by_'+ranking_by_col)
+                                                     withColumnRenamed('sum('+ranking_cols[i]+')',
+                                                                       'sum_'+ranking_cols[i]+'_by_'+ranking_by_col)
             data = data.join(grouped_df, ranking_by_col, "inner")
             data = data.drop('sum('+ranking_cols[i]+')')
         if verbose:
@@ -39,4 +44,4 @@ def create_ranking_variables(data,
     except Exception:
         logger.exception("Fatal error in create_ranking_variables()")
         raise
-    return(data)
+    return data

@@ -5,7 +5,6 @@ Created on Thu May 24 10:36:02 2018
 Function that converts to cyclical variables in the cyclical_variables list. For each variable in the list sin and cos of this variable is
 created as in the following example:
     seconds_in_day = 24*60*60
-
     df['sin_time'] = np.sin(2*np.pi*df.seconds/seconds_in_day)
     df['cos_time'] = np.cos(2*np.pi*df.seconds/seconds_in_day)
 Afterward original variables are removed from data frame.
@@ -20,18 +19,22 @@ Returns:
 import numpy as np
 from pyspark.sql.functions import sin, cos, col
 from pyspark.sql.types import DoubleType
-def create_cyclical_features(data,
-                             cyclical_variables,
-                             drop_orig_vars=False,
-                             verbose=False,
-                             logger=False):
+
+
+def createCyclicalFeatures(data,
+                           cyclical_variables,
+                           drop_orig_vars=False,
+                           verbose=False,
+                           logger=False):
     try:
         if verbose:
             logger.info('create_cyclical_features() start')
         for i in range(len(cyclical_variables)):
             distinct_values_count = data.select(cyclical_variables[i]).distinct().count()
-            data = data.withColumn(cyclical_variables[i]+'_sin', sin(2*np.pi*col(cyclical_variables[i]).cast(DoubleType())/distinct_values_count))
-            data = data.withColumn(cyclical_variables[i]+'_cos', cos(2*np.pi*col(cyclical_variables[i]).cast(DoubleType())/distinct_values_count))
+            data = data.withColumn(cyclical_variables[i]+'_sin', sin(2*np.pi*col(cyclical_variables[i]).\
+                                                                     cast(DoubleType())/distinct_values_count))
+            data = data.withColumn(cyclical_variables[i]+'_cos', cos(2*np.pi*col(cyclical_variables[i]).\
+                                                                     cast(DoubleType())/distinct_values_count))
         if drop_orig_vars:
             data = data.drop(*cyclical_variables)
         if verbose:
@@ -39,4 +42,4 @@ def create_cyclical_features(data,
     except Exception:
         logger.exception("Fatal error in create_cyclical_features()")
         raise
-    return(data)
+    return data

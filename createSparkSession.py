@@ -13,9 +13,11 @@ Returns:
 """
 from pyspark.sql import SparkSession
 from pyspark.sql import SQLContext
-def create_spark_session(jarra='quinto',
-                         verbose=False,
-            			 logger=False):
+
+
+def createSparkSession(jarra='quinto',
+                       verbose=False,
+            		   logger=False):
     try:
 
         if 'spark' in locals():
@@ -71,4 +73,4 @@ def create_spark_session(jarra='quinto',
     except Exception:
         logger.exception("Fatal error in create_spark_session()")
         raise
-    return(spark)
+    return spark

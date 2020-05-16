@@ -11,19 +11,21 @@ columns are afterward removed.
 	Returns:
 		@data - pandas d.f. with data, with ohe input columns delated and ohe output columns inlcuded
 		@ohe_columns_out_names - list with strings with ohe column names after ohe conversion
+TODO: Introduce logic: if data[i].value_counts() is not unique
 """
 import pandas as pd
-def data_ohe(data,
-			 ohe_variables,
-			 verbose,
-			 logger):
+
+
+def dataOHE(data,
+		    ohe_variables,
+			verbose,
+			logger):
     try:
         if verbose:
             logger.info('One hot encoding starts, function data_ohe(), variables: ')
         try:
             ohe_columns_out_names = list()
             for i in ohe_variables:
-                #if data[i].value_counts() is not unique --introduce
                 if verbose:
                     logger.info(i)
                 if i in data.columns:
@@ -32,9 +34,6 @@ def data_ohe(data,
                     data = data.drop([i], axis=1)
                     ohe_columns_out_names = ohe_columns_out_names + list(dummies.columns)
 
-        except Exception, e:
-            logger.error('Problem with one hot encoding: ', exc_info=True)
-            raise
         if verbose:
             logger.info('One hot encoding end')
     except Exception:

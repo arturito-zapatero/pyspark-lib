@@ -11,14 +11,17 @@ Returns:
     feature_importances - df with features and feat. importances, ordered by feat. importances
 """
 import pandas as pd
-def rf_feature_importance(fittedData,
-                          transformedData,
-                          verbose,
-                          logger):
+
+
+def RFFeatureImportance(fittedData,
+                        transformedData,
+                        verbose,
+                        logger):
     try:
         if verbose:
             logger.info('rf_feature_importance() start')
-        #gets column names, including OHE columns
+
+        # Gets column names, including OHE columns
         df1 = pd.DataFrame(transformedData\
                            .schema["features"]\
                            .metadata["ml_attr"]["attrs"]["binary"]+
@@ -26,9 +29,11 @@ def rf_feature_importance(fittedData,
                            .schema["features"]\
                            .metadata["ml_attr"]["attrs"]["numeric"])\
                 .sort_values("idx")
-        #get model feature importances
+
+        # Get model feature importances
         df2 = pd.DataFrame(fittedData.featureImportances.toArray())
-        #join and order
+
+        # Join and order
         df1.reset_index(drop=True, inplace=True)
         df2.reset_index(drop=True, inplace=True)
         featureImportances = pd.concat([df1, df2], axis=1).drop('idx', axis=1)
@@ -39,4 +44,4 @@ def rf_feature_importance(fittedData,
     except Exception:
         logger.exception("Fatal error in rf_feature_importance()")
         raise
-    return(featureImportances)
+    return featureImportances

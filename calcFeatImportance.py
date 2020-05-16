@@ -15,12 +15,12 @@ Returns:
     @transformedFull -  - spark df with model results with added error columns
 """
 from rf_feature_importance import rf_feature_importance
-def calc_feat_importance_all(fitList,
-                             testDataList,
-                             col_target,
-                             first_pred_day,
-                             verbose,
-                             logger):
+def calcFeatImportance(fitList,
+                       testDataList,
+                       col_target,
+                       first_pred_day,
+                       verbose,
+                       logger):
     try:
         if verbose:
             logger.info('calc_feat_importance_all step start')
@@ -36,14 +36,17 @@ def calc_feat_importance_all(fitList,
                                                        transformedDataLast,
                                                        verbose,
                                                        logger)
+
         #prepare feature variables importance for saving
         feature_importances_last = featureImportancesLast.rename(index=str,columns={'name':'variable'})
-        feature_importances_last = feature_importances_last.rename(index=str,columns={'feature_importances':'importance'})
+        feature_importances_last = feature_importances_last.rename(index=str,columns={'feature_importances':
+                                                                                          'importance'})
         feature_importances_last['dt_execution'] = first_pred_day
         feature_importances_last['model'] = 'last'
         feature_importances_last['target_variable'] = col_target
         feature_importances_first = featureImportancesFirst.rename(index=str,columns={'name':'variable'})
-        feature_importances_first = feature_importances_first.rename(index=str,columns={'feature_importances':'importance'})
+        feature_importances_first = feature_importances_first.rename(index=str,columns={'feature_importances':
+                                                                                            'importance'})
         feature_importances_first['dt_execution'] = first_pred_day
         feature_importances_first['model'] = 'first'
         feature_importances_first['target_variable'] = col_target
@@ -53,4 +56,4 @@ def calc_feat_importance_all(fitList,
     except Exception:
         logger.exception("Fatal error in calc_feat_importance_all()")
         raise
-    return(featureImportancesFirst, featureImportancesLast, feature_importances_all)
+    return featureImportancesFirst, featureImportancesLast, feature_importances_all

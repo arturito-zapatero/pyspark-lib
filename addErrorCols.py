@@ -10,10 +10,12 @@ Input:
     @verbose - should print logger messages on the screen and save them to .log file?
 	@logger - logger connection
 Returns:
-    @transformedFull -  - spark df with model results with added error columns
+    @transformedFull - spark df with model results with added error columns
 """
+
+
 from pyspark.sql.functions import abs, pow
-def add_error_cols(transformedFull, 
+def addErrorCols(transformedFull,
                    col_target,
                    col_predict,
                    verbose,
@@ -31,9 +33,10 @@ def add_error_cols(transformedFull,
         transformedFull = transformedFull\
                          .select('*', pow(transformedFull[col_target] - transformedFull[col_predict],2)\
                          .alias(col_target+'_SE'))
+
         if verbose:
             logger.info('Add error columns to spark df end')
     except Exception:
         logger.exception("Fatal error in add_error_cols()")
         raise
-    return(transformedFull)
+    return transformedFull

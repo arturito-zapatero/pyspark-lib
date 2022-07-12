@@ -13,10 +13,12 @@ Returns:
 import pandas as pd
 
 
-def RFFeatureImportance(fittedData,
-                        transformedData,
-                        verbose,
-                        logger):
+def RFFeatureImportance(
+    fittedData,
+    transformedData,
+    verbose: bool,
+    logger: bool
+) -> pd.DataFrame:
     try:
         if verbose:
             logger.info('rf_feature_importance() start')

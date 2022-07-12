@@ -21,11 +21,13 @@ Returns:
     @cols_id - list with string with ID columns
 """
 
-def defineFeatures(model_complex='first',
-                    use_clustered_data_sets=False,
-                    col_target='target_column',
-                    verbose=False,
-                    logger=False):
+def defineFeatures(
+    model_complex: str = 'first',
+    use_clustered_data_sets: bool = False,
+    col_target: str = 'target_column',
+    verbose: bool = False,
+    logger: bool = False
+) -> [list, list, list, str, list]:
     try:
         if verbose:
             logger.info('Definition of features and target columns start, function define_features_and_target_columns()')

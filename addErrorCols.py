@@ -1,7 +1,4 @@
-# -*- coding: utf-8 -*-
 """
-Created in 2018
-@author: aszewczyk
 Function that adds error (SE, APE and AE) columns to spark df with model results
 Input:
     @transformedFull - spark df with model results
@@ -12,14 +9,18 @@ Input:
 Returns:
     @transformedFull - spark df with model results with added error columns
 """
-
-
+import logging
 from pyspark.sql.functions import abs, pow
-def addErrorCols(transformedFull,
-                   col_target,
-                   col_predict,
-                   verbose,
-                   logger):    
+
+
+def addErrorCols(
+    transformedFull,
+    col_target: str,
+    col_predict: str,
+    verbose: bool,
+    logger: logging.Logger
+):
+
     try:
         if verbose:
             logger.info('Add error columns to spark df start, function add_error_cols()')
@@ -31,7 +32,7 @@ def addErrorCols(transformedFull,
                          .select('*', abs((transformedFull[col_target] - transformedFull[col_predict]))\
                          .alias(col_target+'_AE'))
         transformedFull = transformedFull\
-                         .select('*', pow(transformedFull[col_target] - transformedFull[col_predict],2)\
+                         .select('*', pow(transformedFull[col_target] - transformedFull[col_predict], 2)\
                          .alias(col_target+'_SE'))
 
         if verbose:
@@ -39,4 +40,5 @@ def addErrorCols(transformedFull,
     except Exception:
         logger.exception("Fatal error in add_error_cols()")
         raise
+
     return transformedFull

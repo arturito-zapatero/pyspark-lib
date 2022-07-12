@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Created in Jan 2019
 @author: aszewczyk
@@ -16,22 +15,29 @@ Input:
 Returns:
     @transformedFull -  - spark df with model results with added error columns
 """
+import logging
+
 import pandas as pd
 from lib.add_error_cols import add_error_cols
-def calcTrainingSetError(fitList,
-                            fitBasicList,
-                            trainDataList,
-                            trainDataBasicList,
-                            cols_id,
-                            col_predict,
-                            col_target,
-                            verbose,
-                            logger):
+
+
+def calcTrainingSetError(
+    fitList: list,
+    fitBasicList: list,
+    trainDataList: list,
+    trainDataBasicList: list,
+    cols_id: list,
+    col_predict: str,
+    col_target: str,
+    verbose: bool,
+    logger: logging.Logger
+) -> dict:
     try:
         if verbose:
             logger.info('calc_training_set_error step start')
 
-        # Fit to training set for training error evaluation for first and last models (ie. naxt week and in 3 months), basic and full feature list
+        # Fit to training set for training error evaluation for first and last models (ie. naxt week and in 3 months),
+        # basic and full feature list
         resultsTrainFirstModel = fitList[0]\
                                     .transform(trainDataList[0])\
                                     .select(cols_id + [col_predict] + [col_target])
@@ -126,4 +132,5 @@ def calcTrainingSetError(fitList,
     except Exception:
         logger.exception("Fatal error in calc_training_set_error()")
         raise
+
     return mlflow_params_extra

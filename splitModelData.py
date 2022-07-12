@@ -18,16 +18,19 @@ Returns:
 """
 
 
-def splitModelData(allDataList,
-                   filterTrainEndList,
-                   filterPredStartList,
-                   filterPredEndList,
-                   training_sample,
-                   verbose,
-                   logger):
+def splitModelData(
+    allDataList: list,
+    filterTrainEndList: list,
+    filterPredStartList: list,
+    filterPredEndList: list,
+    training_sample: [int, float],
+    verbose: bool,
+    logger: bool
+):
     try:
         if verbose:
-            logger.info('Split into training and test/pred data sets for each of the consecturive models start, function split_model_data_spk()')
+            logger.info('Split into training and test/pred data sets for each of the consecturive models start,'
+                        ' function split_model_data_spk()')
         trainingDataList = []
         testDataList = []
 
@@ -47,14 +50,17 @@ def splitModelData(allDataList,
     return trainingDataList, testDataList
 
 
-def split_training_data(allDataList,
-                        filterTrainEndList,
-                        training_sample,
-                        verbose,
-                        logger):
+def split_training_data(
+    allDataList,
+    filterTrainEndList,
+    training_sample: [int, float],
+    verbose: bool,
+    logger: bool
+):
     try:
         if verbose:
-            logger.info('Split into training data sets for each of the consecturive models start, function split_model_data_spk()')
+            logger.info('Split into training data sets for each of the consecturive models start,'
+                        ' function split_model_data_spk()')
         trainingDataList = []
         for i in range(len(allDataList)):
             trainingDataList.append(allDataList[i]\
@@ -68,12 +74,14 @@ def split_training_data(allDataList,
     return trainingDataList
 
 
-def split_test_data(allDataList,
-                    filterPredStartList,
-                    filterPredEndList,
-                    training_sample,
-                    verbose,
-                    logger):
+def split_test_data(
+    allDataList,
+    filterPredStartList,
+    filterPredEndList,
+    training_sample: [int, float],
+    verbose: bool,
+    logger: bool
+):
     try:
         if verbose:
             logger.info('Split into test/pred data sets for each of the consecturive models start, function split_model_data_spk()')

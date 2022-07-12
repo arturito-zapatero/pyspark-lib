@@ -1,9 +1,8 @@
-# -*- coding: utf-8 -*-
 """
 Created on Thu May 24 10:36:02 2018
 @author: aszewczyk
-Function that converts to cyclical variables in the cyclical_variables list. For each variable in the list sin and cos of this variable is
-created as in the following example:
+Function that converts to cyclical variables in the cyclical_variables list. For each variable in the list sin and cos
+ of this variable is created as in the following example:
     seconds_in_day = 24*60*60
     df['sin_time'] = np.sin(2*np.pi*df.seconds/seconds_in_day)
     df['cos_time'] = np.cos(2*np.pi*df.seconds/seconds_in_day)
@@ -16,16 +15,19 @@ Input:
 Returns:
     @data - spark df with added cyclical columns
 """
+
 import numpy as np
 from pyspark.sql.functions import sin, cos, col
 from pyspark.sql.types import DoubleType
 
 
-def createCyclicalFeatures(data,
-                           cyclical_variables,
-                           drop_orig_vars=False,
-                           verbose=False,
-                           logger=False):
+def createCyclicalFeatures(
+    data,
+    cyclical_variables: list,
+    drop_orig_vars: bool = False,
+    verbose: bool = False,
+    logger: bool = False
+):
     try:
         if verbose:
             logger.info('create_cyclical_features() start')
@@ -42,4 +44,5 @@ def createCyclicalFeatures(data,
     except Exception:
         logger.exception("Fatal error in create_cyclical_features()")
         raise
+
     return data

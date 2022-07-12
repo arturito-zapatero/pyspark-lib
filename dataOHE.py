@@ -16,10 +16,12 @@ TODO: Introduce logic: if data[i].value_counts() is not unique
 import pandas as pd
 
 
-def dataOHE(data,
-		    ohe_variables,
-			verbose,
-			logger):
+def dataOHE(
+    data,
+    ohe_variables: list,
+    verbose: bool,
+    logger: bool
+):
     try:
         if verbose:
             logger.info('One hot encoding starts, function data_ohe(), variables: ')

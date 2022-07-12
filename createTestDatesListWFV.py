@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Created in 2018
 @author: aszewczyk
@@ -14,14 +13,18 @@ Returns:
     @logger - logger connection
 TODO: set the date ranges for WFV as input parameters (list)
 """
+
 from datetime import timedelta
 from datetime import datetime
 import calendar
 
 
-def createTestDatesListWFV(split_value,
-                           verbose,
-                           logger):
+def createTestDatesListWFV(
+    split_value: datetime.date,
+    verbose: bool,
+    logger: bool
+) -> [list, list]:
+
     try:
         if verbose:
             logger.info('Create lists with test/prediction sets start and end dates start, function create_test_dates_list()')
@@ -59,4 +62,5 @@ def createTestDatesListWFV(split_value,
     except Exception:
         logger.exception("Fatal error in create_test_dates_list()")
         raise
+
     return(start_days_list, end_days_list)

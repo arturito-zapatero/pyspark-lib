@@ -1,9 +1,8 @@
-# -*- coding: utf-8 -*-
 """
 Created in 2019
 @author: aszewczyk
-Function that calculates feature importance for first and last model (ie. for next week and for third month), joins them in
-one df, which can e.g. be saved in S3. Only models with full features lists
+Function that calculates feature importance for first and last model (ie. for next week and for third month), joins them
+in one df, which can e.g. be saved in S3. Only models with full features lists
 Input:
     @fitList - list with model (e.g. rf) pipelines for each consecutive model with all features
     @testDataList - list with data for prediction for each consecutive model with all features
@@ -12,15 +11,21 @@ Input:
     @first_pred_day - first day of predictions (ie. for production tomorrow)
 	@logger - logger connection
 Returns:
-    @transformedFull -  - spark df with model results with added error columns
+    @featureImportancesFirst, featureImportancesLast, feature_importances_all
 """
+import logging
+
 from rf_feature_importance import rf_feature_importance
-def calcFeatImportance(fitList,
-                       testDataList,
-                       col_target,
-                       first_pred_day,
-                       verbose,
-                       logger):
+
+
+def calcFeatImportance(
+    fitList: list,
+    testDataList: list,
+    col_target: str,
+    first_pred_day: str,
+    verbose: bool,
+    logger: logging.Logger
+):
     try:
         if verbose:
             logger.info('calc_feat_importance_all step start')
@@ -37,8 +42,8 @@ def calcFeatImportance(fitList,
                                                        verbose,
                                                        logger)
 
-        #prepare feature variables importance for saving
-        feature_importances_last = featureImportancesLast.rename(index=str,columns={'name':'variable'})
+        # Prepare feature variables importance for saving
+        feature_importances_last = featureImportancesLast.rename(index=str,columns={'name': 'variable'})
         feature_importances_last = feature_importances_last.rename(index=str,columns={'feature_importances':
                                                                                           'importance'})
         feature_importances_last['dt_execution'] = first_pred_day

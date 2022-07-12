@@ -16,17 +16,21 @@ Returns:
 TODO:
     - add time variable for aggregations (ranking_time_variable, ranking_time_amount)
 """
+import logging
+
 from pyspark.sql.functions import col, udf, lit, sum
 from pyspark.sql.types import StringType
 
 
-def createRankingVariables(data,
-                             ranking_cols,
-                             ranking_by_col,
-                             ranking_time_variable,
-                             ranking_time_amount,
-                             verbose,
-                             logger):
+def createRankingVariables(
+    data,
+    ranking_cols: list,
+    ranking_by_col: str,
+    ranking_time_variable: str,
+    ranking_time_amount: str,
+    verbose: bool,
+    logger: logging.Logger
+):
     try:
         if verbose:
             logger.info('Add ranking variables: ranking by: '+ranking_by_col+' ranking cols: '+str(ranking_cols)+
@@ -44,4 +48,5 @@ def createRankingVariables(data,
     except Exception:
         logger.exception("Fatal error in create_ranking_variables()")
         raise
+
     return data

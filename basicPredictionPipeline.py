@@ -26,7 +26,7 @@ Example:
                                      checks=False)
     Creates prediction for revenue from tickets from 2018-01-15 until 2018-03-31 using model pipelines trained on 2017-01-01, @data and @logger from 
     demand_forecast_data_prep() step
-TODO: refactor!
+TODO: general refactoring
 """
 
 from lib.calcFeatImportance import calcFeatImportance
@@ -48,14 +48,16 @@ local_path=os.getcwd() + '/'
 MODEL_CONFIG_FILE=local_path+'data/config/file_name.conf'
 
 
-def basicPredictionPipeline(data,
-                            col_target="",
-                            first_pred_day=False,
-                            dt_execution=False,
-                            jarra='quinto',
-                            logger=False,
-                            verbose=True,
-                            checks=False):
+def basicPredictionPipeline(
+    data,
+    col_target: str = "",
+    first_pred_day: [str, bool] = False,
+    dt_execution: [str, bool] = False,
+    jarra: str = 'quinto',
+    logger: bool = False,
+    verbose: bool = True,
+    checks: bool = False
+):
     try:
         
         start_all = datetime.now()
@@ -183,7 +185,8 @@ def basicPredictionPipeline(data,
         model_results\
         .to_csv(local_save_path + col_target + '_results_' + first_pred_day.replace('-', '_') + '.csv', index=False)
         if verbose:
-            logger.info('Results saved in: ' + local_save_path + col_target + '_results_' + first_pred_day.replace('-', '_') + '.csv')
+            logger.info('Results saved in: ' + local_save_path + col_target + '_results_' +
+                        first_pred_day.replace('-', '_') + '.csv')
 
         # Get feature importances
         featureImportancesFirst, featureImportancesLast, feature_importances_all = calcFeatImportance(fitList,
@@ -195,11 +198,13 @@ def basicPredictionPipeline(data,
 
         # Save feature importance for given target variable
         feature_importances_all.\
-        to_csv(local_save_path + col_target + '_feat_importance_' + first_pred_day.replace('-', '_') + '.csv', index=False)
+        to_csv(local_save_path + col_target + '_feat_importance_' +
+               first_pred_day.replace('-', '_') + '.csv', index=False)
         end_all = datetime.now()
         if verbose:
             logger.info('Random Forest, all models, time: ' + str(end_all-start_all))   
-            logger.info('Feature importance saved in: ' + local_save_path + col_target + '_feat_importance_' + first_pred_day.replace('-', '_') + '.csv')
+            logger.info('Feature importance saved in: ' + local_save_path + col_target + '_feat_importance_' +
+                        first_pred_day.replace('-', '_') + '.csv')
             logger.info('Check sum of predicted variables per month and count of flights each month: ')
 
         # Calculate metrics for mlflow
@@ -213,7 +218,10 @@ def basicPredictionPipeline(data,
                           checks=True
                           )
 
-            checkDuplicates = resultsFull.drop_duplicates(subset=['dt_flight_date_local', 'cd_num_flight', 'cd_airport_pair', 'cd_carrier'])\
+            checkDuplicates = resultsFull.drop_duplicates(subset=['dt_flight_date_local',
+                                                                  'cd_num_flight',
+                                                                  'cd_airport_pair',
+                                                                  'cd_carrier'])\
                               .count() - resultsFull.count()
             resultsFullCount = resultsFull.count()
 
@@ -222,9 +230,15 @@ def basicPredictionPipeline(data,
             testBasicSetCount = np.sum([testDataBasicList[i].count() for i in range(len(testDataBasicList))])
 
             logger.info('Sum of flights per month (real values): ')
-            logger.info(resultsFull.groupBy("dt_flight_year_month").agg(count("cd_airport_pair")).sort("dt_flight_year_month").toPandas())
+            logger.info(resultsFull.groupBy("dt_flight_year_month")
+                        .agg(count("cd_airport_pair"))
+                        .sort("dt_flight_year_month")
+                        .toPandas())
             logger.info('Sum of predicted ' + col_predict + ' per month (all flights): ')
-            logger.info(resultsFull.groupBy("dt_flight_year_month").agg(sum(col_predict)).sort("dt_flight_year_month").toPandas())
+            logger.info(resultsFull.groupBy("dt_flight_year_month")
+                        .agg(sum(col_predict))
+                        .sort("dt_flight_year_month")
+                        .toPandas())
             logger.info('Number of duplicated flights: ')
 
             logger.info('Number of rows/flights in test sets: ' + str(testSetCount))
@@ -245,10 +259,9 @@ def basicPredictionPipeline(data,
                             }
         else:
             mlflow_params = {}
-        #spark.stop()
-        #if verbose:
-        #    logger.info('Spark Session stopped')
+
     except Exception:
         logger.exception("Fatal error in demand_forecast_pred()")
         raise
+
     return(mlflow_params, pred_errors)

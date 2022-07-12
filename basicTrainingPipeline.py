@@ -1,10 +1,11 @@
 """
 Created on 20.11.2018
 @author: aszewczyk
-Function that prepares (e.g. OHE) data already partially processed in demand_forecast_data_prep() step, trains model using data until @first_pred_day-1 for @col_target,
-returns data prep and model pipelines, as well as saves them in S3
+Function that prepares (e.g. OHE) data already partially processed in demand_forecast_data_prep() step, trains model
+using data until @first_pred_day-1 for @col_target, returns data prep and model pipelines, as well as saves them in S3
 Input:
-    @data - spark d.f. with model data prepared in demand_forecast_data_prep() step (we apply here date filters to get dates we need depending on first_pred_day)
+    @data - spark d.f. with model data prepared in demand_forecast_data_prep() step (we apply here date filters to get
+     dates we need depending on first_pred_day)
     @col_target - string with target variable (pax_seat, revenue_tickets or ancis)
     @first_pred_day - last day-1 of data used for training, if not given today is set
     @jarra - string with size of the cluster on AWS ('quinto', 'tercio', 'mediana', 'mass')
@@ -12,22 +13,27 @@ Input:
     @verbose - should print logger messages on the screen and save them to .log file?
     @checks - should calculate advanced metrics, @mlflow_params_extra?
 Returns:
-    @pipelinePrepList - list with data preparation pipelines (StringIndexer, OHE etc.) for each of the models with full features list
-    @pipelinePrepBasicList - list with data preparation pipelines (StringIndexer, OHE etc.) for each of the models with basic features list
+    @pipelinePrepList - list with data preparation pipelines (StringIndexer, OHE etc.) for each of the models with full
+    features list
+    @pipelinePrepBasicList - list with data preparation pipelines (StringIndexer, OHE etc.) for each of the models with
+     basic features list
     @fitList - list with RF models trained pipelines for each of the models with full features list
     @fitBasicList - list with RF models trained pipelines for each of the models with basic features list
     @mlflow_params - dictionary with training parameters for mlflow
     @mlflow_params_extra - dictionary with extra training parameters for mlflow, if @checks=True
 Example:
-    pipelinePrepList, pipelinePrepBasicList, fitList, fitBasicList, mlflow_params, mlflow_params_extra = demand_forecast_training(data=data,
-                                                col_target="revenue_tickets",
-                                                first_pred_day='2019-01-15',
-                                                jarra='mass',
-                                                verbose=True,
-                                                checks=True,
-                                                logger=logger)
-    Prepares data already partially processed in demand_forecast_data_prep() step, trains model using data until @first_pred_day-1 for @col_target,
-    returns data prep and model pipelines, as well as saves them in S3. @data and @logger from demand_forecast_data_prep() step
+    pipelinePrepList, pipelinePrepBasicList, fitList, fitBasicList, mlflow_params, mlflow_params_extra =
+    demand_forecast_training(data=data,
+                            col_target="revenue",
+                            first_pred_day='2019-01-15',
+                            jarra='mass',
+                            verbose=True,
+                            checks=True,
+                            logger=logger)
+    Prepares data already partially processed in demand_forecast_data_prep() step, trains model using data until
+    @first_pred_day-1 for @col_target,
+    returns data prep and model pipelines, as well as saves them in S3. @data and @logger from
+    demand_forecast_data_prep() step
 TODO: refactor!
 """
 
@@ -44,18 +50,19 @@ from pyspark.ml import Pipeline, PipelineModel
 from pyspark.ml.feature import OneHotEncoderEstimator, OneHotEncoderModel, OneHotEncoder, StringIndexer, VectorAssembler
 from pyspark.ml.regression import RandomForestRegressor as RFRegr, RandomForestRegressionModel
 
-
 local_path=os.getcwd() + '/'
 MODEL_CONFIG_FILE=local_path+'data/config/file_name.conf'
 
 
-def basicTrainingPipeline(data=False,
-                          col_target="revenue_tickets",
-                          first_pred_day=False,
-                          jarra='quinto',
-                          verbose=True,
-                          checks=False,
-                          logger=False):
+def basicTrainingPipeline(
+    data,
+    col_target: str,
+    first_pred_day: [bool, str] = False,
+    jarra: str = 'quinto',
+    verbose: bool = True,
+    checks: bool = False,
+    logger: bool = False
+):
     try:
         parser = SafeConfigParser()
         config_file_path = MODEL_CONFIG_FILE
@@ -181,9 +188,12 @@ def basicTrainingPipeline(data=False,
         end = datetime.now()
 
         if verbose:
-            logger.info('First day of model training set: ' + str(trainDataList[0].toPandas().dt_flight_date_local.min()))
-            logger.info('Last day of model training set: ' + str(trainDataList[0].toPandas().dt_flight_date_local.max()))
-            logger.info('String indexer, one hot encoder and vector assembler, done for all models, time: ' + str(end-start))
+            logger.info('First day of model training set: ' +
+                        str(trainDataList[0].toPandas().dt_flight_date_local.min()))
+            logger.info('Last day of model training set: ' +
+                        str(trainDataList[0].toPandas().dt_flight_date_local.max()))
+            logger.info('String indexer, one hot encoder and vector assembler, done for all models, time: ' +
+                        str(end-start))
             logger.info('Number of partition of trainDataList 0 df: ' + str(trainDataList[0].rdd.getNumPartitions()))
             logger.info('Number of partition of trainDataList 5 df: ' + str(trainDataList[5].rdd.getNumPartitions()))
             logger.info('Features list for first model (ie. for next 7 days): ')
@@ -255,4 +265,5 @@ def basicTrainingPipeline(data=False,
     except Exception:
         logger.exception("Fatal error in demand_forecast_training()")
         raise
+
     return pipelinePrepList, fitList, mlflow_params, mlflow_params_extra

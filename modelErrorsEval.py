@@ -19,16 +19,21 @@ Returns:
 TODO: generalize function so it has any number of aggregation level (passed as list possbibly), clean the code
 
 """
+import datetime
+
 from  pyspark.sql.functions import col, abs, sum, count, avg, abs
-def modelErrorsEval(model_results_spk,
-                    col_target,
-                    col_predict,
-                    model_evaluation,
-                    eval_start,
-                    col_agg1,
-                    col_agg2,
-                    verbose,
-                    logger):
+def modelErrorsEval(
+    model_results_spk,
+    col_target: str,
+    col_predict: str,
+    model_evaluation: str,
+    eval_start: [str, datetime.date],
+    col_agg1: str,
+    col_agg2: str,
+    verbose: bool,
+    logger: bool
+):
+
     try:
         if verbose:
             logger.info('Evaluatian of model errors start, evaluation levels: ' + model_evaluation + ' , function demand_forecast_model_eval()')
